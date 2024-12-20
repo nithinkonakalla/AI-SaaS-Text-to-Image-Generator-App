@@ -7,55 +7,57 @@ import imageRouter from "./routes/imageRoutes.js";
 
 const app = express();
 
-// Configure CORS
-app.use(cors({
-  origin: process.env.FRONTEND_URL || '*', // Replace with your frontend URL
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true
-}));
-
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-// Connect to MongoDB
-try {
-  await connectDB();
-  console.log('MongoDB connected successfully');
-} catch (error) {
-  console.error('MongoDB connection error:', error);
-}
+// Connect to MongoDB before routes
+const startServer = async () => {
+  try {
+    await connectDB();
+    console.log('MongoDB connected successfully');
+    
+    // Routes
+    app.use('/api/user', userRouter);
+    app.use('/api/image', imageRouter);
 
-// Routes
-app.use('/api/user', userRouter);
-app.use('/api/image', imageRouter);
+    // Basic route for testing
+    app.get('/', (req, res) => {
+      res.json({ status: 'ok', message: 'Server is running' });
+    });
 
-// Health check route
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Server is running' });
-});
+    // Error handling middleware
+    app.use((err, req, res, next) => {
+      console.error('Error:', err);
+      res.status(500).json({
+        success: false,
+        message: process.env.NODE_ENV === 'development' 
+          ? err.message 
+          : 'Internal server error'
+      });
+    });
 
-// Root route
-app.get('/', (req, res) => {
-  res.json({ message: 'API is working' });
-});
+    // 404 handler
+    app.use((req, res) => {
+      res.status(404).json({
+        success: false,
+        message: 'Route not found'
+      });
+    });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ success: false, message: 'Something went wrong!' });
-});
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
 
-// Handle 404
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
-});
-
-const PORT = process.env.PORT || 4000;
+startServer();
 
 // For local development
 if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 4000;
   app.listen(PORT, () => console.log('Server running on port ' + PORT));
 }
 
-// For Vercel
 export default app;
 
