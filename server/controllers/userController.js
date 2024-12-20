@@ -143,102 +143,37 @@ export const paymentRazorpay = async(req,res)=>{
     }
 }
 
-// export const verifyRazorpay = async (req,res) => {
-//     try {
-//         const {razorpay_order_id} = req.body;
-//         const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id)
-//         if (orderInfo.status === 'paid'){
-//             const transactionData = await transactionModel.findById(orderInfo.receipt)
-
-//             // This below checks if the payment field in the transaction data is already marked as true, 
-//             // which would indicate that the payment was already processed.
-//            // If it is true, the response indicates a failure because duplicate payments should not be allowed.
-
-//             if(transactionData.payment){
-//                 return res.json({success:false, message:"Payment Failed"})
-//             }
-//             const userData = await userModel.findById(transactionData.userId)
-//             const creditBalance = userData.creditBalance + transactionData.credits
-
-//             await userModel.findByIdAndUpdate(userData._id,{creditBalance})
-//             await transactionModel.findByIdAndUpdate(transactionData._id,{payment: true})
-
-
-//             res.json({success:true, message:"Credits Added"})
-
-//         }
-//         else{
-//             res.json({success:true, message:"Payment Failed"})
-
-//         }
-//     } catch (error) {
-//         console.log(error);
-//         res.json({success:false, message:error.message})
-//     }
-// }
-
-export const verifyRazorpay = async (req, res) => {
+export const verifyRazorpay = async (req,res) => {
     try {
-      const { razorpay_order_id } = req.body;
-      if (!razorpay_order_id) {
-        return res.status(400).json({
-          success: false,
-          message: "Missing order ID"
-        });
-      }
-  
-      const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
-      
-      if (orderInfo.status === 'paid') {
-        const transactionData = await transactionModel.findById(orderInfo.receipt);
-        
-        if (!transactionData) {
-          return res.status(404).json({
-            success: false,
-            message: "Transaction not found"
-          });
+        const {razorpay_order_id} = req.body;
+        const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id)
+        if (orderInfo.status === 'paid'){
+            const transactionData = await transactionModel.findById(orderInfo.receipt)
+
+            // This below checks if the payment field in the transaction data is already marked as true, 
+            // which would indicate that the payment was already processed.
+           // If it is true, the response indicates a failure because duplicate payments should not be allowed.
+
+            if(transactionData.payment){
+                return res.json({success:false, message:"Payment Failed"})
+            }
+            const userData = await userModel.findById(transactionData.userId)
+            const creditBalance = userData.creditBalance + transactionData.credits
+
+            await userModel.findByIdAndUpdate(userData._id,{creditBalance})
+            await transactionModel.findByIdAndUpdate(transactionData._id,{payment: true})
+
+
+            res.json({success:true, message:"Credits Added"})
+
         }
-  
-        if (transactionData.payment) {
-          return res.status(400).json({
-            success: false,
-            message: "Payment already processed"
-          });
+        else{
+            res.json({success:true, message:"Payment Failed"})
+
         }
-  
-        const userData = await userModel.findById(transactionData.userId);
-        if (!userData) {
-          return res.status(404).json({
-            success: false,
-            message: "User not found"
-          });
-        }
-  
-        const creditBalance = userData.creditBalance + transactionData.credits;
-  
-        await Promise.all([
-          userModel.findByIdAndUpdate(userData._id, { creditBalance }),
-          transactionModel.findByIdAndUpdate(transactionData._id, { payment: true })
-        ]);
-  
-        return res.status(200).json({
-          success: true,
-          message: "Credits Added"
-        });
-      }
-  
-      return res.status(400).json({
-        success: false,
-        message: "Payment Failed"
-      });
-  
     } catch (error) {
-      console.error('Payment verification error:', error);
-      return res.status(500).json({
-        success: false,
-        message: error.message || "Payment verification failed"
-      });
+        console.log(error);
+        res.json({success:false, message:error.message})
     }
-  }
-  
-  
+}
+
