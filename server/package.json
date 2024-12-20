@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "server": "nodemon server.js"
+    "server": "nodemon server.js",
+    "postinstall": "npm install bcrypt --build-from-source"
+
   },
   "author": "",
   "license": "ISC",
