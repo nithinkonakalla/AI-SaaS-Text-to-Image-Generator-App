@@ -1,5 +1,5 @@
 import userModel from "../models/userModel.js";
-import bcrypt from 'bcryptjs'
+import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import Razorpay from 'razorpay'
 import transactionModel from "../models/transactionModel.js";
