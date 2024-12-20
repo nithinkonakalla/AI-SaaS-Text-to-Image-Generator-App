@@ -53,6 +53,7 @@ const AppContextProvider = (props) =>{
         localStorage.removeItem('token');
         setToken('')
         setUser('')
+        toast.success('Logged Out successfully');
     }
 
     useEffect(()=>{
