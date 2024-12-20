@@ -1,17 +1,17 @@
-import express from "express";
+import express from 'express';
+import serverless from 'serverless-http';
 import cors from 'cors';
-import 'dotenv/config';
-import connectDB from "../config/mongodb.js";
-import userRouter from "../routes/userRoutes.js";
-import imageRouter from "../routes/imageRoutes.js";
+import connectDB from "../../config/mongodb.js";
+import userRouter from "../../routes/userRoutes.js";
+import imageRouter from "../../routes/imageRoutes.js";
 
 const app = express();
 
-// Basic middleware
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection
+// Connect to MongoDB
 let isConnected = false;
 const connectToDatabase = async () => {
   if (isConnected) return;
@@ -25,40 +25,47 @@ const connectToDatabase = async () => {
   }
 };
 
-// Wrap the request handler
-const handler = async (req, res) => {
+// Middleware to ensure DB connection
+app.use(async (req, res, next) => {
   try {
     await connectToDatabase();
-
-    // Routes
-    if (req.url.startsWith('/api/user')) {
-      return userRouter(req, res);
-    }
-    
-    if (req.url.startsWith('/api/image')) {
-      return imageRouter(req, res);
-    }
-
-    // Default route
-    if (req.url === '/api' || req.url === '/') {
-      return res.json({ status: 'ok', message: 'API is working' });
-    }
-
-    // 404 for unmatched routes
-    res.status(404).json({ 
-      success: false, 
-      message: 'Route not found' 
-    });
-
+    next();
   } catch (error) {
-    console.error('Request error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    console.error('Database connection error:', error);
+    res.status(500).json({ success: false, message: 'Database connection failed' });
   }
-};
+});
 
-export default handler;
+// Routes
+app.use('/api/user', userRouter);
+app.use('/api/image', imageRouter);
 
+// Test route
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working' });
+});
+
+// Root route
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'Server is running' });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.url} not found`
+  });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error'
+  });
+});
+
+// Export the serverless handler
+export const handler = serverless(app);
